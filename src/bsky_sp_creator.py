@@ -112,7 +112,7 @@ def get_following():
     cursor = follows_response.cursor
 
     for follower in follows_response.follows:
-        follows.append({"id":follower["did"], "handle":follower["handle"]})
+        follows.append({"did":follower["did"], "handle":follower["handle"]})
                         # "verified":follower["verification"]["verifiedStatus"]})
         follow_no += 1
 
@@ -124,7 +124,7 @@ def get_following():
         cursor = follows_response.cursor
         # print(cursor)
         for follower in follows_response.follows:
-            follows.append({"id":follower["did"], "handle":follower["handle"]})
+            follows.append({"did":follower["did"], "handle":follower["handle"]})
             follow_no += 1
 
             if follow_no % 1000 == 0:
@@ -137,20 +137,26 @@ def get_following():
 
 def comparefollowstofollowers():
     follows = []
+    follower_remove = []
 
     with open('follows.json', "rt") as follows_data:
-        print(follows_data)
         follows = json.load(follows_data)
 
-        with open('followers.json') as followers_data:
-            follows = json.load(followers_data)
+    with open('followers.json') as followers_data:
+        followers = json.load(followers_data)
 
-            for followers_item in follows:
-                print(followers_item)
-                if not followers_item["did"] in follows:
-                    print("Remove: ", followers_item)
-                else:
-                    print(followers_item)
+    find_remove = True
+    for follows_item in follows:
+        #print(followers_item)
+
+        for followers_item in followers:
+            if followers_item["did"] == follows_item["did"]:
+                find_remove = False
+
+        if find_remove:
+            followers_remove.append(follows_item)
+
+    pprint(followers_remove)
 
 def main():
     all_followers = []
