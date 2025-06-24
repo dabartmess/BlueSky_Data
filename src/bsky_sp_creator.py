@@ -1,4 +1,6 @@
+import io
 import sys
+import os
 
 import atproto
 import atproto_client
@@ -44,6 +46,7 @@ def get_followers():
     print(did)
     followers_response = client.get_followers(actor=did, cursor=cursor, limit=100)
     follow_no = 0
+    follower_data=[]
 
     cursor = followers_response.cursor
 
@@ -52,13 +55,11 @@ def get_followers():
         foll_data = {
             "did":         follower["did"],
             "handle":      follower["handle"],
-            "display_name":follower["display_name"],
-            "verification":follower["verification"]
+            "display_name":follower["display_name"]
+            # "verification":follower["verification"]["verifiedStatus"]
         }
-        if follower["verification"]:
-            print("Verified")
-        with open("followers.json", "a+t") as f_out:
-            json.dump(foll_data, f_out, indent=2)
+
+        follower_data.append(foll_data)
 
         if follow_no % 1000 == 0:
             print("Fetched: ", follow_no, ": ", cursor)
@@ -69,17 +70,17 @@ def get_followers():
             cursor = followers_response.cursor
             for follower in followers_response.followers:
                 follow_no += 1
-                if follower["verification"]:
-                    print("Verified")
+                # if follower["verification"]:
+                #     print("Verified")
 
                 foll_data = {
                     "did":         follower["did"],
                     "handle":      follower["handle"],
-                    "display_name":follower["display_name"],
-                    "verification":follower["verification"]
+                    "display_name":follower["display_name"]
+                    # "verification":follower["verification"]["verifiedStatus"]
                 }
-                with open("followers.json", "a+t") as f_out:
-                    json.dump(foll_data, f_out, indent=2)
+
+                follower_data.append(foll_data)
 
                 if follow_no % 1000 == 0:
                     print("Fetched: ", follow_no, ": ", cursor)
@@ -87,6 +88,9 @@ def get_followers():
         except  atproto_client.exceptions.NetworkError:
             print("End of Stream")
             break
+
+    with open("followers.json", "a+t") as f_out:
+        json.dump(follower_data, f_out, indent=2)
 
     print("Number of Followers: ", follow_no)
 
@@ -108,52 +112,41 @@ def get_following():
     cursor = follows_response.cursor
 
     for follower in follows_response.follows:
-        if follower["verification"] and show:
-            print("Verified: ", follower["verification"])
-
-        follows.append({"id":follower["did"], "handle":follower["handle"], "verified":follower["verification"]})
-
-        with open("follows.json", "a+t") as f_out:
-            json.dump(foll_data, f_out, indent=2)
-
+        follows.append({"id":follower["did"], "handle":follower["handle"]})
+                        # "verified":follower["verification"]["verifiedStatus"]})
         follow_no += 1
 
-        if follow_no % 1000 == 0:
-            print("Fetched: ", follow_no, ": ", cursor)
+    if follow_no % 1000 == 0:
+        print("Fetched: ", follow_no, ": ", cursor)
 
     while cursor:
-        try:
-            follows_response = client.get_follows(actor=did, cursor=cursor, limit=100)
-            cursor = follows_response.cursor
-            # print(cursor)
-            for follower in follows_response.follows:
-                if follower["verification"] and show:
-                    print("Verified: ", follower["display_name"])
+        follows_response = client.get_follows(actor=did, cursor=cursor, limit=100)
+        cursor = follows_response.cursor
+        # print(cursor)
+        for follower in follows_response.follows:
+            follows.append({"id":follower["did"], "handle":follower["handle"]})
+            follow_no += 1
 
-                follow_no += 1
+            if follow_no % 1000 == 0:
+                print("Fetched: ", follow_no, ": ", cursor)
 
-                follows.append({"id":follower["did"], "handle":follower["handle"], "verified":follower["verification"]})
-                #foll_data = insert_data(follower)
-                with open("follows.json", "a+t") as f_out:
-                    json.dump(follows, f_out, indent=2)
+    with open("follows.json", "a+t") as f_out:
+        json.dump(follows, f_out, indent=2)
 
-                if follow_no % 1000 == 0:
-                    print("Fetched: ", follow_no, ": ", cursor)
-
-        except  atproto_client.exceptions.NetworkError:
-            print("End of Stream")
-            break
     print("Number of Follows: ", follow_no)
 
 def comparefollowstofollowers():
-    with open('follows.json') as follows_data:
+    follows = []
+
+    with open('follows.json', "rt") as follows_data:
+        print(follows_data)
         follows = json.load(follows_data)
-        follows.close()
 
         with open('followers.json') as followers_data:
-            follows = json.loads(followers_data)
+            follows = json.load(followers_data)
 
             for followers_item in follows:
+                print(followers_item)
                 if not followers_item["did"] in follows:
                     print("Remove: ", followers_item)
                 else:
@@ -161,8 +154,11 @@ def comparefollowstofollowers():
 
 def main():
     all_followers = []
-
-    show = sys.argv[1]
+    try:
+        os.remove("follows.json")
+        os.remove("followers.json")
+    except FileNotFoundError:
+        print("Follow files not found")
 
     template_res = importlib.resources.files("bsky_sp_creator").joinpath("./bsky.properties")
     with importlib.resources.as_file(template_res) as template_file:
