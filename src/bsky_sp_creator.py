@@ -6,6 +6,7 @@ import atproto
 import atproto_client
 import importlib.resources
 import json
+import pprint
 
 from typing import TypedDict, Any
 
@@ -156,7 +157,7 @@ def comparefollowstofollowers():
         if find_remove:
             followers_remove.append(follows_item)
 
-    pprint(followers_remove)
+    pprint.pprint(follower_remove, indent=2, width=80)
 
 def main():
     all_followers = []
