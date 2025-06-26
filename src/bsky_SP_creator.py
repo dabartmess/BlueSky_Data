@@ -3,7 +3,7 @@ import json
 import os
 import pprint
 import sys
-from typing import TypedDict
+from datetime import datetime
 
 import atproto
 import atproto_client
@@ -14,8 +14,9 @@ from bsky_follows_util import get_followers
 
 sp_name = ""
 sp_description = ""
-bsky_handle = ""
-bsky_password = ""
+handle = 'thedingodave.substack.com'
+password = 'i3g7-27cm-oezl-dfsm'
+
 
 def create_SP_list(followers):
     sp_items = []
@@ -33,14 +34,14 @@ def create_SP_list(followers):
                 sp_list.append(followers[curr+i])
                 sp_items.append(followers[curr+i])
 
-        create_SP(sp_list, sp_num, bsky_handle, bsky_password)
+        create_SP(sp_list, sp_num, handle, password)
         sp_num += 1
         curr += i
 
     print("Number of items: ", len(sp_items))
     #print(SP_items)
 
-def create_SP(sp_list, num, author, pwd):
+def create_SP(sp_list, spnum, author, pwd):
     print(author, pwd)
     client = atproto.Client()
     profile = client.login(author, pwd)
@@ -50,10 +51,14 @@ def create_SP(sp_list, num, author, pwd):
 
     print("Entering create_SP")
     client.com.atproto.repo.create_record(
-        description = atproto.models.AppBskyGraphStarterpack.Record.description(so_description),
-        name = atproto.models.AppBskyGraphStarterpack.Record.name(so_name + str(num)),
-        list = atproto.models.AppBskyGraphStarterpack.Record.list(sp_list),
-        py_type = 'app.bsky.graph.starterpack'
+        {
+            "collection":'app.bsky.graph.starterpack',
+            "repo": did,
+            "description": sp_description,
+            "name": sp_name + str(spnum),
+            "list": sp_list,
+            "created_at": datetime.now()
+        }
     )
 
 def main():
