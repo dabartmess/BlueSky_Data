@@ -1,15 +1,11 @@
-import io
-import sys
+import importlib.resources
+import json
 import os
+import pprint
+from typing import TypedDict
 
 import atproto
 import atproto_client
-import importlib.resources
-import json
-import pprint
-
-from typing import TypedDict, Any
-
 from atproto_client.models.app.bsky.actor.defs import ProfileView
 
 show = False
@@ -44,7 +40,7 @@ def get_followers():
     print('Welcome,', profile.display_name)
     resolver = atproto.IdResolver()
     did = resolver.handle.resolve('thedingodave.substack.com')
-    print(did)
+    print(did, profile.display_name)
     followers_response = client.get_followers(actor=did, cursor=cursor, limit=100)
     follow_no = 0
     follower_data=[]
@@ -57,13 +53,12 @@ def get_followers():
             "did":         follower["did"],
             "handle":      follower["handle"],
             "display_name":follower["display_name"]
-            # "verification":follower["verification"]["verifiedStatus"]
         }
 
         follower_data.append(foll_data)
 
-        if follow_no % 1000 == 0:
-            print("Fetched: ", follow_no, ": ", cursor)
+        # if follow_no % 1000 == 0:
+        #     print("Fetched: ", follow_no, ": ", cursor)
 
     while cursor:
         try:
@@ -71,20 +66,17 @@ def get_followers():
             cursor = followers_response.cursor
             for follower in followers_response.followers:
                 follow_no += 1
-                # if follower["verification"]:
-                #     print("Verified")
 
                 foll_data = {
                     "did":         follower["did"],
                     "handle":      follower["handle"],
                     "display_name":follower["display_name"]
-                    # "verification":follower["verification"]["verifiedStatus"]
                 }
 
                 follower_data.append(foll_data)
 
-                if follow_no % 1000 == 0:
-                    print("Fetched: ", follow_no, ": ", cursor)
+                # if follow_no % 1000 == 0:
+                #     print("Fetched: ", follow_no, ": ", cursor)
 
         except  atproto_client.exceptions.NetworkError:
             print("End of Stream")
@@ -94,7 +86,7 @@ def get_followers():
         json.dump(follower_data, f_out, indent=2)
 
     print("Number of Followers: ", follow_no)
-
+    return follower_data
 
 def get_following():
     cursor = None
@@ -117,24 +109,25 @@ def get_following():
                         # "verified":follower["verification"]["verifiedStatus"]})
         follow_no += 1
 
-    if follow_no % 1000 == 0:
-        print("Fetched: ", follow_no, ": ", cursor)
+    # if follow_no % 1000 == 0:
+    #     print("Fetched: ", follow_no, ": ", cursor)
 
     while cursor:
         follows_response = client.get_follows(actor=did, cursor=cursor, limit=100)
         cursor = follows_response.cursor
-        # print(cursor)
         for follower in follows_response.follows:
             follows.append({"did":follower["did"], "handle":follower["handle"]})
             follow_no += 1
 
-            if follow_no % 1000 == 0:
-                print("Fetched: ", follow_no, ": ", cursor)
+            # if follow_no % 1000 == 0:
+            #     print("Fetched: ", follow_no, ": ", cursor)
 
     with open("follows.json", "a+t") as f_out:
         json.dump(follows, f_out, indent=2)
 
-    print("Number of Follows: ", follow_no)
+    # print("Number of Follows: ", follow_no)
+
+    return follows
 
 def comparefollowstofollowers():
     follows = []
@@ -148,16 +141,14 @@ def comparefollowstofollowers():
 
     find_remove = True
     for follows_item in follows:
-        #print(followers_item)
-
         for followers_item in followers:
             if followers_item["did"] == follows_item["did"]:
                 find_remove = False
 
         if find_remove:
-            followers_remove.append(follows_item)
+            follower_remove.append(follows_item)
 
-    pprint.pprint(follower_remove, indent=2, width=80)
+    # pprint.pprint(follower_remove, indent=2, width=80)
 
 def main():
     all_followers = []
