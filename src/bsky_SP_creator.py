@@ -1,19 +1,13 @@
 import importlib.resources
-import json
 import os
-import pprint
 import sys
-from datetime import datetime
 import atproto
-from atproto import Client, models
-import atproto_client
-from atproto_client.models.app.bsky.actor.defs import ProfileView
-from awscli.botocore.docs.utils import py_type_name
+from atproto import Client, models, client_utils
 
 from bsky_follows_util import get_followers
 
-sp1_name = "THE Dingo Dave"
-sp1_description = ""
+sp1_name = "Test SP"
+sp1_description = "Testing automated creation of lists"
 handle = 'thedingodave.substack.com'
 password = 'i3g7-27cm-oezl-dfsm'
 
@@ -33,10 +27,12 @@ def create_SP_list(followers):
             if curr+i < len(followers):
                 sp_list.append(followers[curr+i])
                 sp_items.append(followers[curr+i])
-                print("follower DID: ", followers[curr+i])
+                #print("follower DID: ", followers[curr+i])
 
-        print("SPNAME: ", sp1_name)
-        create_SP(sp_list, sp_num, handle, password)
+        #print("SPNAME: ", sp1_name)
+        spuri = create_SP(sp_list, sp_num, handle, password)
+        #print("SP URI: ", spuri)
+        create_post(spuri, sp_num)
         break
 
         sp_num += 1
@@ -45,6 +41,38 @@ def create_SP_list(followers):
     print("Number of items: ", len(sp_items))
     #print(SP_items)
 
+def create_post(spuri, sp_num):
+    print("SP uri: ", spuri)
+
+    client = Client()
+    profile = client.login(handle, password)
+    print('Welcome,', profile.display_name)
+    resolver = atproto.IdResolver()
+    did = resolver.handle.resolve('thedingodave.substack.com')
+
+    at_created = client.get_current_time_iso()
+
+    post = client_utils.TextBuilder()
+    post.text("Another comprehensive Starter Pack from my Follower List")
+    post.link("Service Pack " + str(sp_num), spuri)
+    post.build_facets()
+
+    print("SP uri: ", spuri.uri)
+    spuri2 = spuri.uri
+
+    client.com.atproto.repo.create_record(
+        data={
+            "collection": "client.app.bsky.feed.post",
+            "repo":      did,
+            "record":    {
+                "description":sp1_description,
+                "list":       spuri2,
+                "createdAt":  at_created
+            }
+        }
+    )
+
+
 def create_SP(sp_list, spnum, listname, description):
     client = Client()
     profile = client.login(handle, password)
@@ -52,10 +80,8 @@ def create_SP(sp_list, spnum, listname, description):
     resolver = atproto.IdResolver()
     did = resolver.handle.resolve('thedingodave.substack.com')
 
-    print("Entering create_SP")
-
     at_created = client.get_current_time_iso()
-    print("Created: ", at_created)
+    #print("Created: ", at_created)
 
     aturi = client.app.bsky.graph.list.create(repo=did,
                                               record=models.AppBskyGraphList.Record(
@@ -77,11 +103,11 @@ def create_SP(sp_list, spnum, listname, description):
                 py_type="app.bsky.graph.listitem"
             )
         )
-        print("List Rec URI: ", listrecuri.uri)
+        #print("List Rec URI: ", listrecuri.uri)
 
-    print("AT-URI: ", aturi.uri)
+    #print("AT-URI: ", aturi.uri)
 
-    client.com.atproto.repo.create_record(
+    spuri = client.app.bsky.graph.starterpack.create(
         data = {
             "collection": "app.bsky.graph.starterpack",
             "repo": did,
@@ -94,13 +120,12 @@ def create_SP(sp_list, spnum, listname, description):
         }
     )
 
-def main():
-    sp1_name = sys.argv[1]
-    sp1_description = sys.argv[2]
-    bsky_handle = sys.argv[3]
-    bsky_password = sys.argv[4]
+    return spuri.uri
 
-    print(sp1_name, sp1_description)
+def main():
+    bsky_handle = sys.argv[1]
+    bsky_password = sys.argv[2]
+
     print(bsky_handle, bsky_password)
 
     all_followers = []
