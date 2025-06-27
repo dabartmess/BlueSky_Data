@@ -57,15 +57,15 @@ def create_post(spuri, sp_num):
     post.link("Service Pack " + str(sp_num), spuri)
     post.build_facets()
 
-    print("SP uri: ", spuri.uri)
-    spuri2 = spuri.uri
+    print("SP uri: ", spuri)
+    spuri2 = spuri
 
     client.com.atproto.repo.create_record(
         data={
             "collection": "client.app.bsky.feed.post",
             "repo":      did,
             "record":    {
-                "description":sp1_description,
+                "description":"Another in the list of automated Starter Packs, #" + str(sp_num),
                 "list":       spuri2,
                 "createdAt":  at_created
             }
@@ -96,27 +96,26 @@ def create_SP(sp_list, spnum, listname, description):
 
         listrecuri = client.app.bsky.graph.listitem.create(
             repo=did,
-            record=models.AppBskyGraphListitem.Record(
-                subject=follower["did"],
-                list=aturi.uri,
-                created_at=at_created,
-                py_type="app.bsky.graph.listitem"
-            )
+            record={
+                "subject": follower["did"],
+                "list": aturi.uri,
+                "created_at": at_created,
+                "py_type": "app.bsky.graph.listitem"
+            }
         )
         #print("List Rec URI: ", listrecuri.uri)
 
     #print("AT-URI: ", aturi.uri)
 
     spuri = client.app.bsky.graph.starterpack.create(
-        data = {
-            "collection": "app.bsky.graph.starterpack",
-            "repo": did,
-            "record": {
-                "description": sp1_description,
-                "name": sp1_name + str(spnum),
-                "list": aturi.uri,
-                "createdAt": at_created
-            }
+#        collection="app.bsky.graph.starterpack",
+        repo=did,
+        record={
+            "description": sp1_description,
+            "name": sp1_name + str(spnum),
+            "list": aturi.uri,
+            "createdAt": at_created,
+            "py_type": "app.bsky.graph.starterpack"
         }
     )
 
