@@ -2,12 +2,14 @@ import importlib.resources
 import os
 import sys
 import atproto
+import atproto_client.models.blob_ref
 from atproto import Client, models, client_utils
-
+from atproto_client.models.blob_ref import BlobRef
+import atproto_core
 from bsky_follows_util import get_followers
 
-sp1_name = "Test SP"
-sp1_description = "Testing automated creation of lists"
+sp1_name = "Dingo Dave SP #"
+sp1_description = "Automated Starter Pack by THE Dingo Dave\nFollow these folks, they're great!"
 handle = 'thedingodave.substack.com'
 password = 'i3g7-27cm-oezl-dfsm'
 
@@ -32,7 +34,7 @@ def create_SP_list(followers):
         #print("SPNAME: ", sp1_name)
         spuri = create_SP(sp_list, sp_num, handle, password)
         #print("SP URI: ", spuri)
-        create_post(spuri, sp_num)
+        bsky_post = create_post(spuri, sp_num)
         break
 
         sp_num += 1
@@ -42,41 +44,68 @@ def create_SP_list(followers):
     #print(SP_items)
 
 def create_post(spuri, sp_num):
-    print("SP uri: ", spuri)
+    print("Entering create_post ")
 
     client = Client()
     profile = client.login(handle, password)
-    print('Welcome,', profile.display_name)
     resolver = atproto.IdResolver()
     did = resolver.handle.resolve('thedingodave.substack.com')
+    img_bytes = None
+    img_path = "/home/dabartmess/Dropbox/Protest/BlueSkyLiberty.jpg"
 
     at_created = client.get_current_time_iso()
 
-    post = client_utils.TextBuilder()
-    post.text("Another comprehensive Starter Pack from my Follower List")
-    post.link("Service Pack " + str(sp_num), spuri)
-    post.build_facets()
+    # ref2 = client.send_image(text="BlueSky Liberty", image=img_data, image_alt="BlueSky Liberty Logo")
+    # print("Ref: ", ref2)
+    print("Creating embeds")
 
-    print("SP uri: ", spuri)
-    spuri2 = spuri
-
-    client.com.atproto.repo.create_record(
-        data={
-            "collection": "client.app.bsky.feed.post",
-            "repo":      did,
-            "record":    {
-                "description":"Another in the list of automated Starter Packs, #" + str(sp_num),
-                "list":       spuri2,
-                "createdAt":  at_created
-            }
-        }
+    with open(img_path, "rb") as f:
+        img_data = f.read()
+    blob_ref = atproto_client.models.blob_ref.BlobRef(
+        alt="BlueSky Liberty Wave",
+        mime_type="image/jpeg",
+        ref=spuri,
+        maxSize=1000000,
+        size=190055,
+        py_type="blob"
     )
 
+    print("Blob: ", blob_ref)
+    embed =  [
+        atproto_client.models.AppBskyGraphStarterpack.FeedItem(
+            py_type = "app.bsky.graph.starterpack#feedItem",
+            uri = spuri
+        ),
+        atproto_client.models.AppBskyEmbedImages.Image(
+            alt="THEDingoDave.substack.com BlueSky Liberty",
+            image=blob_ref,
+            py_type="app.bsky.embed.images#image"
+        )
+    ]
+    print("Creating Post Record")
+
+    rkey_array = str(blob_ref).split(':')[3].split('/')[2].split("\'")
+    print("RKEY_ARRAY: ", rkey_array)
+    rkey = rkey_array[0]
+    print("RKEY: ", rkey)
+
+    bsky_post = client.app.bsky.feed.post.create(
+        repo = did,
+        rkey = rkey,
+        record = {
+            "text":       "Starter Pack by THE Dingo Dave, #" + str(sp_num),
+            "description":"Automated Starter Packs by THE Dingo Dave, #" + str(sp_num),
+            "createdAt":  at_created,
+            "embed":      embed,
+            "py_type":    "app.bsky.feed.post"
+        }
+    )
+    print("Bsky_Post: ", bsky_post)
+    return bsky_post
 
 def create_SP(sp_list, spnum, listname, description):
     client = Client()
     profile = client.login(handle, password)
-    print('Welcome,', profile.display_name)
     resolver = atproto.IdResolver()
     did = resolver.handle.resolve('thedingodave.substack.com')
 
@@ -114,10 +143,12 @@ def create_SP(sp_list, spnum, listname, description):
             "description": sp1_description,
             "name": sp1_name + str(spnum),
             "list": aturi.uri,
+
             "createdAt": at_created,
             "py_type": "app.bsky.graph.starterpack"
         }
     )
+
 
     return spuri.uri
 
