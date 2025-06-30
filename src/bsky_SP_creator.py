@@ -31,12 +31,10 @@ def create_SP_list(followers, handle, password):
             if curr+i < len(followers):
                 sp_list.append(followers[curr+i])
                 sp_items.append(followers[curr+i])
-                #print("follower DID: ", followers[curr+i])
 
-        #print("SPNAME: ", sp1_name)
-        spuri = create_SP(sp_list, sp_num, sp1_name, sp1_description, handle, password)
+        aturi, spuri = create_SP(sp_list, sp_num, sp1_name, sp1_description, handle, password)
         #print("SP URI: ", spuri)
-        bsky_post = create_post(spuri, sp_num, handle, password)
+        bsky_post = create_post(aturi, sp_num, handle, password)
         break
 
         sp_num += 1
@@ -55,35 +53,7 @@ def create_post(spuri, sp_num, handle, password):
     resolver = atproto.IdResolver()
     did = resolver.handle.resolve('thedingodave.substack.com')
 
-    img_bytes = None
-    img_path = "/home/dabartmess/Dropbox/Protest/BlueSkyLiberty.jpg"
-
     at_created = client.get_current_time_iso()
-
-    # ref2 = client.send_image(text="BlueSky Liberty", image=img_data, image_alt="BlueSky Liberty Logo")
-    # print("Ref: ", ref2)
-    # print("Creating embeds")
-
-    # with open(img_path, "rb") as f:
-    #     img_data = f.read()
-    # blob_ref = atproto_client.models.blob_ref.BlobRef(
-    #     alt="BlueSky Liberty Wave",
-    #     mime_type="image/jpeg",
-    #     ref=spuri,
-    #     maxSize=1000000,
-    #     size=190055,
-    #     py_type="blob"
-    # )
-    #
-    # print("Blob: ", blob_ref)
-    # print("URI: ", spuri)
-    #
-    # embed =  [
-    #     atproto_client.models.app.bsky.embed.images.Image(
-    #         {"record":{"alt":"THEDingoDave.substack.com BlueSky Liberty", "image":blob_ref,
-    #             "py_type":"app.bsky.embed.images"}}
-    #     )
-    # ]
 
     print("Creating Post Record")
 
@@ -96,7 +66,7 @@ def create_post(spuri, sp_num, handle, password):
     bsky_post = client.com.atproto.repo.create_record(
         data = {
             "repo": did,
-            "collection": "app.bsky.repo.record",
+            "collection": "app.bsky.graph.starterpack",
             "rkey": rkey,
             "record": {
                 "name":       "Starter Pack by THE Dingo Dave, #" + str(sp_num),
@@ -159,7 +129,7 @@ def create_SP(sp_list, spnum, name, description, handle, password):
     )
 
 
-    return spuri.uri
+    return aturi.uri, spuri.uri
 
 def main():
     bsky_handle = sys.argv[1]
