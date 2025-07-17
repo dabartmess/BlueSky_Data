@@ -1,14 +1,12 @@
 import importlib.resources
 import os
 import sys
+
 import atproto
-import atproto_client.models.blob_ref
-from atproto import Client, models, client_utils
-from atproto_client.models.blob_ref import BlobRef
-import atproto_core
-from bsky_follows_util import get_followers
+from atproto import models
 
 import session_reuse
+from bsky_follows_util import get_followers
 
 sp1_name = "Dingo Dave SP #"
 sp1_description = "Automated Starter Pack by THE Dingo Dave\nFollow these folks, they're great!"
@@ -32,7 +30,8 @@ def create_SP_list(followers, handle, password):
                 sp_list.append(followers[curr+i])
                 sp_items.append(followers[curr+i])
 
-        aturi, spuri = create_SP(sp_list, sp_num, sp1_name, sp1_description, handle, password)
+        aturi = create_SP(sp_list, sp_num, sp1_name, sp1_description, handle, password)
+        print("SP #" + str(sp_num) + " has been created")
         #print("SP URI: ", spuri)
         bsky_post = create_post(aturi, sp_num, handle, password)
         break
@@ -43,7 +42,7 @@ def create_SP_list(followers, handle, password):
     print("Number of items: ", len(sp_items))
     #print(SP_items)
 
-def create_post(spuri, sp_num, handle, password):
+def create_post(aturi, sp_num, handle, password):
     client = session_reuse.init_client(handle, password)
     print("Entering create_post ")
 
@@ -58,22 +57,27 @@ def create_post(spuri, sp_num, handle, password):
     print("Creating Post Record")
 
 #    rkey_array = str(blob_ref).split(':')[3].split('/')[2].split("\'")
-    rkey_array = str(spuri).split(':')[3].split('/')[2].split("\'")
+    rkey_array = str(aturi).split(':')[3].split('/')[2].split("\'")
     print("RKEY_ARRAY: ", rkey_array)
     rkey = rkey_array[0]
     print("RKEY: ", rkey)
 
-    bsky_post = client.com.atproto.repo.create_record(
+    bsky_post = client.com.atproto.repo.put_record (
         data = {
             "repo": did,
-            "collection": "app.bsky.graph.starterpack",
-            "rkey": rkey,
+            "rkey":rkey,
+            "collection": "com.atproto.repo",
             "record": {
-                "name":       "Starter Pack by THE Dingo Dave, #" + str(sp_num),
-                "list":       spuri,
-                "description":"Automated Starter Packs by THE Dingo Dave, #" + str(sp_num),
-                "createdAt":  at_created,
-                "py_type":    "app.bsky.graph.starterpack"
+                "repo":      did,
+                "collection":"com.atproto.repo",
+                "record":    {
+                    "createdAt":  at_created,
+                    "name":       "Starter Pack by THE Dingo Dave, #" + str(sp_num),
+                    "list":       aturi,
+                    #           "feeds":      [aturi],
+                    "description":"Automated Starter Packs by THE Dingo Dave, #" + str(sp_num),
+                    "py_type":    "app.bsky.graph.starterpack"
+                }
             }
         }
     )
@@ -113,23 +117,26 @@ def create_SP(sp_list, spnum, name, description, handle, password):
         )
         #print("List Rec URI: ", listrecuri.uri)
 
-    #print("AT-URI: ", aturi.uri)
+    print("AT-URI: ", aturi)
+    rkey_array = str(aturi).split(':')[3].split('/')[2].split("\'")
+    print("RKEY_ARRAY: ", rkey_array)
+    rkey = rkey_array[0]
+    print("RKEY: ", rkey)
 
     spuri = client.app.bsky.graph.starterpack.create(
-#        collection="app.bsky.graph.starterpack",
         repo=did,
+        rkey=rkey,
         record={
-            "description": sp1_description,
-            "name": sp1_name + str(spnum),
-            "list": aturi.uri,
-
-            "createdAt": at_created,
-            "py_type": "app.bsky.graph.starterpack"
+            "createdAt":  at_created,
+            "name":       "Starter Pack by THE Dingo Dave, #" + str(spnum),
+            "list":       aturi.uri,
+            "feeds":      [],
+            "description":"Automated Starter Packs by THE Dingo Dave, #" + str(spnum),
+            "py_type":    "app.bsky.graph.starterpack"
         }
     )
 
-
-    return aturi.uri, spuri.uri
+    return spuri.uri
 
 def main():
     bsky_handle = sys.argv[1]

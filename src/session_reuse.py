@@ -17,7 +17,7 @@ def save_session(session_string: str) -> None:
 
 
 def on_session_change(event: SessionEvent, session: Session) -> None:
-    print('Session changed:', event, repr(session))
+    #print('Session changed:', event, repr(session))
     if event in (SessionEvent.CREATE, SessionEvent.REFRESH):
         print('Saving changed session')
         save_session(session.export())
@@ -29,10 +29,10 @@ def init_client(handle, password) -> Client:
 
     session_string = get_session()
     if session_string:
-        print('Reusing session')
+        #print('Reusing session')
         client.login(session_string=session_string)
     else:
-        print('Creating new session')
+        #print('Creating new session')
         client.login(handle, password)
 
     return client
